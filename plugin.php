@@ -49,10 +49,17 @@ function toret_clean_woocommerce_page() {
         
                 jQuery('.tcw_delete').on( 'click', function(e){
                     e.preventDefault();
-                    alert('test');
                     jQuery('.delete_notice').empty()
                     jQuery('.delete_notice').append('<p><?php _e('Deleting products', 'toret-clean-woocommerce'); ?></p>');
                     tcw_delete_products();
+
+                });
+
+                jQuery('.tcw_delete_images').on( 'click', function(e){
+                    e.preventDefault();
+                    jQuery('.delete_notice').empty()
+                    jQuery('.delete_notice').append('<p><?php _e('Deleting images', 'toret-clean-woocommerce'); ?></p>');
+                    tcw_delete_images();
 
                 });
 
@@ -67,11 +74,29 @@ function toret_clean_woocommerce_page() {
 
                     jQuery.post(ajaxurl, data, function(response) {
 
-                        var modalinfo = jQuery( '.xml-modal-info-content' );
-                        modalinfo.empty();
-                        modalinfo.append( response );
                         if( response != 'finish' ){
                             tcw_delete_products(); 
+                            jQuery('.delete_notice').empty()
+                    		jQuery('.delete_notice').append( response );
+                        }else{
+                            jQuery('.delete_notice').empty()
+                    		jQuery('.delete_notice').append( '<p><?php _e('All done!', 'toret-clean-woocommerce'); ?></p>' );
+                        }
+                    });
+            
+                }
+
+
+                function tcw_delete_images() {
+ 
+                    var data = {
+                        action    : 'tcw_delete_images'
+                    };
+
+                    jQuery.post(ajaxurl, data, function(response) {
+
+                        if( response != 'finish' ){
+                            tcw_delete_images(); 
                             jQuery('.delete_notice').empty()
                     		jQuery('.delete_notice').append( response );
                         }else{
@@ -107,8 +132,24 @@ function toret_clean_woocommerce_page() {
 				echo '<p>' . __( 'There is not warning before delete. All products will be removed', 'toret-clean-woocommerce') . '</p>';
 				echo '<br />';
 				echo '<p><a href="#" class="button button-primary tcw_delete">' . __( 'Delete all products.', 'toret-clean-woocommerce') . '</a></p>';
+				
 			}
 
+			$images_count = 0;
+  				foreach ( wp_count_posts( 'attachment' ) as $image )
+					$images_count += $image;
+  
+  			if ( ! $images_count ) {
+				echo '<h2>' . __( 'No attachments found.', 'toret-clean-woocommerce') . '</h2>';
+			} else {
+				echo '<h2>' . sprintf(__( 'Found %s attacments.', 'toret-clean-woocommerce'), $images_count ) . '</h2>';
+				echo '<br />';
+				echo '<p>' . __( 'There is not warning before delete. All attachments will be removed', 'toret-clean-woocommerce') . '</p>';
+				echo '<br />';
+				echo '<p><a href="#" class="button button-primary tcw_delete_images">' . __( 'Delete all images.', 'toret-clean-woocommerce') . '</a></p>';
+				
+			}
+		
 			?>
 
   		<div class="delete_notice"></div>
@@ -143,6 +184,35 @@ function tcw_delete_products(){
 					$products_count += $variation;
 		
 			echo '<p>'.$products_count.' '.__( 'products remains','toret-clean-woocommerce' ).'</p>';
+
+		}
+        
+        exit();
+
+}
+
+add_action( 'wp_ajax_tcw_delete_images', 'tcw_delete_images' );
+function tcw_delete_images(){
+
+        $args = array( 
+				'post_type'   => 'attachment',
+				'post_status' => 'any',
+				'numberposts' => 10, 
+				);
+		$images = get_posts( $args );
+
+		if( empty( $images ) ){
+			echo 'finish';
+		}else{
+			foreach( $images as $image ) {
+				wp_delete_attachment( $image->ID, true );
+			}
+
+			$images_count = 0;
+  				foreach ( wp_count_posts( 'attachment' ) as $img )
+					$images_count += $img;
+  				
+			echo '<p>'.$images_count.' '.__( 'images remains','toret-clean-woocommerce' ).'</p>';
 
 		}
         
